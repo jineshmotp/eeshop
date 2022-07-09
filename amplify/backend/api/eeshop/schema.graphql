@@ -1,0 +1,10 @@
+type Product @model {
+  id: ID!
+  userSub: String!
+
+  fullName: String!
+  phoneNumber: String
+  country: String
+  city: String
+  address: String
+}
