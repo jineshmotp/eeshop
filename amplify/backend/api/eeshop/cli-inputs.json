@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "serviceConfiguration": {
+    "apiName": "eeshop",
+    "serviceName": "AppSync",
+    "gqlSchemaPath": "/media/developer/Work/reactnative/eeshop/amplify/backend/api/eeshop/schema.graphql",
+    "defaultAuthType": {
+      "mode": "API_KEY",
+      "expirationTime": 365,
+      "apiKeyExpirationDate": "2023-07-10T18:45:59.459Z",
+      "keyDescription": "api key eeshop"
+    },
+    "conflictResolution": {
+      "defaultResolutionStrategy": {
+        "type": "AUTOMERGE"
+      }
+    }
+  }
+}
