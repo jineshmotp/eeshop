@@ -47,10 +47,10 @@ const ProductItem = ({item } : ProductItemProps) => {
             )}
             <Text>{item.ratings}</Text>
           </View>
-          <Text style={styles.price}>${item.price}
+          <Text style={styles.price}>${item.price.toFixed(2)}
           {item.oldPrice && (
-          <Text style={styles.oldprice}>          
-          ${item.oldPrice}</Text>
+          <Text style={styles.oldprice}>
+          ${item.oldPrice.toFixed(2)}</Text>
           )}
           </Text>
         </View>
