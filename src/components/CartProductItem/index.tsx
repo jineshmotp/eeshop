@@ -47,9 +47,9 @@ const CartProductItem = ({cartItem}: CartProductItemProps) => {
             <Text>{product.ratings}</Text>
           </View>
           <Text style={styles.price}>
-            from ${product.price}
+            from ${product.price.toFixed(2)}
             {product.oldPrice && (
-              <Text style={styles.oldPrice}> ${product.oldPrice}</Text>
+              <Text style={styles.oldPrice}> ${product.oldPrice.toFixed(2)}</Text>
             )}
           </Text>
         </View>

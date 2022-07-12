@@ -9,11 +9,18 @@ import {
   Platform,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
-import styles from './styles';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import countryList from 'country-list';
+import {Auth, DataStore, API, graphqlOperation} from 'aws-amplify';
+//import {useStripe} from '@stripe/stripe-react-native';
+import {Order, OrderProduct, CartProduct} from '../../models';
+import {createPaymentIntent} from '../../graphql/mutations';
+
 import Button from '../../components/Button';
+import styles from './styles';
 
 const countries = countryList.getData();
+
 
 const AddressScreen = () => {
 
@@ -25,7 +32,55 @@ const AddressScreen = () => {
   const [addressError, setAddressError] = useState('');
 
   const [city, setCity] = useState('');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
+  //const {initPaymentSheet, presentPaymentSheet} = useStripe();
+  const navigation = useNavigation();
+  const route = useRoute();
+  //const amount = Math.floor(route.params?.totalPrice * 100 || 0);
+
+
+
+  const saveOrder = async () => {
+    // get user details
+    const userData = await Auth.currentAuthenticatedUser();
+    // create a new order
+    const newOrder = await DataStore.save(
+      new Order({
+        userSub: userData.attributes.sub,
+        fullName: fullname,
+        phoneNumber: phone,
+        country,
+        city,
+        address,
+      }),
+    );
+
+    // fetch all cart items
+    const cartItems = await DataStore.query(CartProduct, cp =>
+      cp.userSub('eq', userData.attributes.sub),
+    );
+
+    // attach all cart items to the order
+    await Promise.all(
+      cartItems.map(cartItem =>
+        DataStore.save(
+          new OrderProduct({
+            quantity: cartItem.quantity,
+            option: cartItem.option,
+            productID: cartItem.productID,
+            orderID: newOrder.id,
+          }),
+        ),
+      ),
+    );
+
+    // delete all cart items
+    await Promise.all(cartItems.map(cartItem => DataStore.delete(cartItem)));
+
+    // redirect home
+    navigation.navigate('home');
+    };
 
 
   const onCheckout = () => {
@@ -46,6 +101,7 @@ const AddressScreen = () => {
 
     // handle payments
     //openPaymentSheet();
+    saveOrder();
   };
 
   const validateAddress = () => {
