@@ -12,7 +12,7 @@ import {Picker} from '@react-native-picker/picker';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import countryList from 'country-list';
 import {Auth, DataStore, API, graphqlOperation} from 'aws-amplify';
-//import {useStripe} from '@stripe/stripe-react-native';
+import {useStripe} from '@stripe/stripe-react-native';
 import {Order, OrderProduct, CartProduct} from '../../models';
 import {createPaymentIntent} from '../../graphql/mutations';
 
@@ -21,9 +21,7 @@ import styles from './styles';
 
 const countries = countryList.getData();
 
-
 const AddressScreen = () => {
-
   const [country, setCountry] = useState(countries[0].code);
   const [fullname, setFullname] = useState('');
   const [phone, setPhone] = useState('');
@@ -34,12 +32,58 @@ const AddressScreen = () => {
   const [city, setCity] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  //const {initPaymentSheet, presentPaymentSheet} = useStripe();
+  const {initPaymentSheet, presentPaymentSheet} = useStripe();
   const navigation = useNavigation();
   const route = useRoute();
-  //const amount = Math.floor(route.params?.totalPrice * 100 || 0);
+  const amount = Math.floor(route.params?.totalPrice * 100 || 0);
 
+  useEffect(() => {
+    fetchPaymentIntent();
+  }, []);
 
+  useEffect(() => {
+    if (clientSecret) {
+      initializePaymentSheet();
+    }
+  }, [clientSecret]);
+
+  const fetchPaymentIntent = async () => {
+    const response = await API.graphql(
+      graphqlOperation(createPaymentIntent, {amount}),
+    );
+    setClientSecret(response.data.createPaymentIntent.clientSecret);
+  };
+
+  const initializePaymentSheet = async () => {
+    //Alert.alert(JSON.stringify(clientSecret));
+    if (!clientSecret) {
+      return;
+    }
+    const {error} = await initPaymentSheet({
+      paymentIntentClientSecret: clientSecret,
+      googlePay: true,
+      merchantDisplayName: 'Merchant Name'
+    });
+    console.log('success');
+    if (error) {
+      Alert.alert(error.message);
+      
+    }
+  };
+
+  const openPaymentSheet = async () => {
+    if (!clientSecret) {
+      return;
+    }
+    const {error} = await presentPaymentSheet({clientSecret});
+
+    if (error) {
+      Alert.alert(`Error code: ${error.code}`, error.message);
+    } else {
+      saveOrder();
+      Alert.alert('Success', 'Your payment is confirmed!');
+    }
+  };
 
   const saveOrder = async () => {
     // get user details
@@ -80,8 +124,7 @@ const AddressScreen = () => {
 
     // redirect home
     navigation.navigate('home');
-    };
-
+  };
 
   const onCheckout = () => {
     if (addressError) {
@@ -100,8 +143,7 @@ const AddressScreen = () => {
     }
 
     // handle payments
-    //openPaymentSheet();
-    saveOrder();
+    openPaymentSheet();
   };
 
   const validateAddress = () => {
@@ -110,12 +152,11 @@ const AddressScreen = () => {
     }
   };
 
-  
   return (
     <KeyboardAvoidingView
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}>
-    <ScrollView style={styles.root}>     
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}>
+      <ScrollView style={styles.root}>
         <View style={styles.row}>
           <Picker selectedValue={country} onValueChange={setCountry}>
             {countries.map(country => (
@@ -124,8 +165,8 @@ const AddressScreen = () => {
           </Picker>
         </View>
 
-         {/* Full name */}
-         <View style={styles.row}>
+        {/* Full name */}
+        <View style={styles.row}>
           <Text style={styles.label}>Full name (First and Last name)</Text>
           <TextInput
             style={styles.input}
@@ -135,8 +176,8 @@ const AddressScreen = () => {
           />
         </View>
 
-         {/* Phone number */}
-         <View style={styles.row}>
+        {/* Phone number */}
+        <View style={styles.row}>
           <Text style={styles.label}>Phone number</Text>
           <TextInput
             style={styles.input}
@@ -147,8 +188,8 @@ const AddressScreen = () => {
           />
         </View>
 
-         {/* Address */}
-         <View style={styles.row}>
+        {/* Address */}
+        <View style={styles.row}>
           <Text style={styles.label}>Address</Text>
           <TextInput
             style={styles.input}
@@ -165,8 +206,8 @@ const AddressScreen = () => {
           )}
         </View>
 
-         {/* City */}
-         <View style={styles.row}>
+        {/* City */}
+        <View style={styles.row}>
           <Text style={styles.label}>City</Text>
           <TextInput
             style={styles.input}
@@ -175,9 +216,9 @@ const AddressScreen = () => {
             onChangeText={setCity}
           />
         </View>
-     
-     <Button text={'checkout'} onPress={onCheckout}/>
-    </ScrollView>
+
+        <Button text="Checkout" onPress={onCheckout} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
